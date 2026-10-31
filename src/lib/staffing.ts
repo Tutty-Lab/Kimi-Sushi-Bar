@@ -58,30 +58,10 @@ export const clip = (from: number, to: number) => (blocks: DayBlocks): DayWindow
     .map((block) => ({ startMinutes: Math.max(from, block.startMinutes), endMinutes: Math.min(to, block.endMinutes) }))
     .filter((window) => window.endMinutes > window.startMinutes);
 
-/**
- * Vorgabe des Betriebs (Shin):
- *  - „Ít nhất có 1 nhân viên làm tới 15:00" und „tới 22:00" – harte Regeln,
- *    deshalb eigene Fenster am Ende beider Blöcke.
- *  - „1 ca khoảng 4-5 người" – als Spanne 3–7 mittags und 4–7 abends geführt:
- *    der Monat hat rund 1.146 Vertragsstunden auf 26 offene Tage, das sind im
- *    Schnitt gut 5 Leute im Haus. Die Verteilung über den Tag macht die
- *    Nachfragekurve unten.
- */
+/** General coverage only. Store-specific demand is supplied explicitly. */
 export const STAFFING_RULES: readonly StaffingRule[] = [
-  {
-    label: "Trong giờ mở cửa", when: "suốt mỗi khung mở", minStaff: 1, maxStaff: Infinity, scaled: false,
-    windows: (blocks) => blocks.map((block) => ({ startMinutes: block.startMinutes, endMinutes: block.endMinutes })),
-  },
-  {
-    label: "Chốt ca trưa", when: "14:30–15:00", minStaff: 1, maxStaff: Infinity, scaled: false,
-    windows: clip(14 * 60 + 30, LUNCH_END),
-  },
-  { label: "Trưa", when: "12:00–14:00", minStaff: 3, maxStaff: 7, scaled: false, windows: clip(12 * 60, 14 * 60) },
-  { label: "Tối", when: "18:00–21:00", minStaff: 4, maxStaff: 7, scaled: false, windows: clip(18 * 60, 21 * 60) },
-  {
-    label: "Đóng cửa", when: "21:30–22:00", minStaff: CLOSING_MIN, maxStaff: CLOSING_MAX, scaled: false,
-    windows: clip(CLOSING_START, 22 * 60),
-  },
+  { priority: "required", label: "Có nhân viên suốt giờ mở cửa", when: "Toàn bộ giờ mở cửa", minStaff: 1, maxStaff: Infinity, scaled: false, who: e => !e.ownerSupport,
+    windows: blocks => blocks },
 ];
 
 /** Mindest-/Höchstzahl einer Regel an einem Wochentag (Gewicht angewandt, aufgerundet). */

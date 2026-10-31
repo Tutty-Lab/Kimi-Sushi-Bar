@@ -155,7 +155,7 @@ export function Dashboard({
             </span>
           </div>
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-2xl font-semibold text-slate-900">{minutesToDecimalHours(plannedMin, 0)}</span>
+            <span className="text-2xl font-semibold text-slate-900">{minutesToDecimalHours(plannedMin, 2)}</span>
             <span className="text-sm text-slate-500">/ {hours(targetMin)} định mức</span>
           </div>
           {/* Dunkel = verplant, Gelb = fehlt noch (Giờ chưa thể xếp). Farbe nur für Status. */}

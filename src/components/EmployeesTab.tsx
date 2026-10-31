@@ -15,8 +15,8 @@ const inputClass =
   "rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base sm:text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500";
 
 
-const FIXED_START_DEFAULT = "06:30";
-const FIXED_END_DEFAULT = "14:30";
+const FIXED_START_DEFAULT = "10:00";
+const FIXED_END_DEFAULT = "14:00";
 
 const WEEKDAY_ORDER: WeekdayKey[] = [
   "monday",
@@ -88,7 +88,7 @@ export function draftFrom(emp?: Employee, partners: PartnerChoice = {}, monthlyM
     fixedStart: emp?.fixedShift ? minutesToTime(emp.fixedShift.startMinutes) : FIXED_START_DEFAULT,
     fixedEnd: emp?.fixedShift ? minutesToTime(emp.fixedShift.endMinutes) : FIXED_END_DEFAULT,
     limited: !!emp?.shiftWindow,
-    windowStart: minutesToTime(emp?.shiftWindow?.startMinutes ?? 660),
+    windowStart: minutesToTime(emp?.shiftWindow?.startMinutes ?? 600),
     windowEnd: minutesToTime(emp?.shiftWindow?.endMinutes ?? 1290),
     holidayDuty: emp?.requiredOnHolidays ?? false,
     shiftMin: emp?.shiftHours ? hoursText(emp.shiftHours.min) : "",
@@ -176,6 +176,37 @@ export function draftToEmployee(d: Draft): Omit<Employee, "id"> {
     // Leeres Feld = arbeitet weiter (kein Austritt).
     endDate: /^\d{4}-\d{2}-\d{2}$/.test(d.endDate) ? d.endDate : undefined,
   };
+}
+
+/** Invalid controls must not silently disappear when the draft is saved. */
+export function employeeDraftErrors(d: ReturnType<typeof draftFrom>, workHours?: WorkHoursConfig): string[] {
+  const errors: string[] = [];
+  if (!d.name.trim()) errors.push("Nhập tên nhân viên.");
+  if (!d.hours.trim() || !Number.isFinite(parseHours(d.hours)) || parseHours(d.hours) < 0) errors.push("Giờ/tháng phải là số từ 0 trở lên.");
+  if (d.monthlySalary.trim() && (!Number.isFinite(parseHours(d.monthlySalary)) || parseHours(d.monthlySalary) < 0)) errors.push("Lương tháng phải là số từ 0 trở lên.");
+  if (d.hourlyRate.trim() && (!Number.isFinite(parseHours(d.hourlyRate)) || parseHours(d.hourlyRate) <= 0)) errors.push("Lương giờ phải lớn hơn 0.");
+  if (d.daysOff.length === 7) errors.push("Đã chọn nghỉ cả tuần; hãy để ít nhất một ngày có thể làm.");
+  if (d.shiftMin || d.shiftMax) {
+    const min = parseHours(d.shiftMin), max = parseHours(d.shiftMax);
+    if (!(min >= 1 && max <= 8 && max >= min)) errors.push("Độ dài ca cần đủ hai ô, từ 1–8h; tối đa phải từ tối thiểu trở lên.");
+  }
+  const validWindow = (from: string, to: string) => {
+    try { return timeToMinutes(to) > timeToMinutes(from); } catch { return false; }
+  };
+  if (d.limited && !validWindow(d.windowStart, d.windowEnd)) errors.push("Khung được làm: giờ kết thúc phải sau giờ bắt đầu.");
+  if (d.fixed) {
+    if (!validWindow(d.fixedStart, d.fixedEnd)) errors.push("Ca cố định: giờ kết thúc phải sau giờ bắt đầu.");
+    else if (workHours) {
+      const start = timeToMinutes(d.fixedStart), end = timeToMinutes(d.fixedEnd);
+      const possible = WEEKDAY_ORDER.some(day => !d.daysOff.includes(day) && !workHours.closedWeekdays[day] && workHours.perWeekday[day].some(b => start >= b.startMinutes && end <= b.endMinutes));
+      if (!possible) errors.push("Ca cố định không nằm trọn trong một khung mở cửa của ngày có thể làm; không được đi qua 14–16h đóng cửa.");
+      if (d.limited && validWindow(d.windowStart, d.windowEnd) && (start < timeToMinutes(d.windowStart) || end > timeToMinutes(d.windowEnd))) errors.push("Ca cố định nằm ngoài khung giờ được làm.");
+    }
+  }
+  if (d.windows.some(w => !w.days.length || !validWindow(w.start, w.end))) errors.push("Mỗi khung ưu tiên cần ít nhất một ngày, giờ bắt đầu và kết thúc hợp lệ.");
+  if (d.unavailableRanges.some(r => !r.startDate || !r.endDate || r.startDate > r.endDate)) errors.push("Khoảng nghỉ cần đủ hai ngày, ngày kết thúc không trước ngày bắt đầu.");
+  if (d.startDate && d.endDate && d.startDate > d.endDate) errors.push("Ngày nghỉ việc không được trước ngày vào làm.");
+  return errors;
 }
 
 export function EmployeesTab({ store, allStores }: { store: UseScheduleReturn; allStores: readonly UseScheduleReturn[] }) {
@@ -466,9 +497,11 @@ function CheckRow({
   note,
   checked,
   onChange,
+  disabled = false,
 }: {
   label: string;
   note?: string;
+  disabled?: boolean;
   checked: boolean;
   onChange: (v: boolean) => void;
 }) {
@@ -481,6 +514,7 @@ function CheckRow({
       <input
         type="checkbox"
         checked={checked}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
         className="h-6 w-6 shrink-0 rounded border-slate-300"
       />
@@ -552,6 +586,7 @@ function EmployeeSheet({
   const toggle = (list: readonly WeekdayKey[], day: WeekdayKey) =>
     list.includes(day) ? list.filter((x) => x !== day) : [...list, day];
 
+  const draftErrors=employeeDraftErrors(d,workHours);
   const hoursBad = !d.hours.trim() || !Number.isFinite(parseHours(d.hours)) || parseHours(d.hours)<0;
   const windowBad = d.limited && (!d.windowStart || !d.windowEnd || d.windowEnd <= d.windowStart);
   const shiftMinH = parseHours(d.shiftMin);
@@ -583,6 +618,7 @@ function EmployeeSheet({
         </div>
 
         <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-6">
+          <p className="mb-3 text-xs text-slate-600">Thay đổi áp dụng khi bấm Tạo lịch lần tiếp theo; lịch hiện tại được giữ nguyên. Giờ/tháng là định mức. Lương tháng và lương giờ chỉ là thông tin, không tự tính lại giờ.</p>
           <SheetSection title="Thông tin">
             <label className="block">
               <FieldLabel>Tên</FieldLabel>
@@ -672,7 +708,7 @@ function EmployeeSheet({
                       {d.daysOff.length === 0
                         ? "Không chọn = làm được mọi ngày quán mở. Ngày quán đóng cửa thì không cần chọn."
                         : d.daysOff.length === 7
-                          ? "Không thể nghỉ cả 7 ngày — sẽ không lưu ngày nghỉ cố định."
+                          ? "Đã nghỉ cả 7 ngày — cần sửa trước khi lưu."
                           : `Không xếp ca vào ${WEEKDAY_ORDER.filter((x) => d.daysOff.includes(x)).map((x) => WEEKDAY_SHORT_VI[x]).join(", ")}.`}
                     </p>
                   </SheetSection>
@@ -693,7 +729,8 @@ function EmployeeSheet({
                     </div>
                     <CheckRow
                       label="Rải đều trong tháng"
-                      note="Có Độ dài ca thì ưu tiên nhiều ca ngắn hơn, trong những ngày có thể làm."
+                      note="Chỉ áp dụng khi nhập đủ Độ dài ca; ưu tiên nhiều ngày, ca ngắn. Luật phủ cao điểm có thể được ưu tiên hơn."
+                      disabled={!(shiftMinH>=1 && shiftMaxH>=shiftMinH && shiftMaxH<=8) && !d.spreadEvenly}
                       checked={d.spreadEvenly}
                       onChange={(v) => set("spreadEvenly", v)}
                     />
@@ -744,7 +781,7 @@ function EmployeeSheet({
                       })}
                       <button
                         type="button"
-                        onClick={() => set("windows", [...d.windows, { days: WEEKDAY_ORDER.slice(1), start: "11:30", end: "15:00" }])}
+                        onClick={() => set("windows", [...d.windows, { days: WEEKDAY_ORDER.slice(1), start: "18:00", end: "20:00" }])}
                         className="w-full rounded-lg border border-dashed border-slate-300 px-3 py-2.5 text-left text-sm text-slate-600"
                       >
                         + Thêm khung giờ <span className="text-slate-400">(ví dụ T3–CN 17:00–22:00)</span>
@@ -903,6 +940,7 @@ function EmployeeSheet({
         </div>
 
         <div className="border-t border-slate-200 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          {draftErrors.length>0 && <ul role="alert" className="mb-3 list-disc pl-4 text-xs text-rose-700">{draftErrors.map(message=><li key={message}>{message}</li>)}</ul>}
           {loeschFrage ? (
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm text-slate-600">Xoá nhân viên này?</span>
@@ -939,7 +977,7 @@ function EmployeeSheet({
               </button>
               <button
                 onClick={() => onSave(draftToEmployee(d), d.partners)}
-                disabled={d.name.trim().length === 0 || hoursBad || windowBad || fixedBad || d.unavailableRanges.some(range => Boolean(range.startDate || range.endDate) && (!range.startDate || !range.endDate || range.startDate > range.endDate))}
+                disabled={draftErrors.length>0}
                 className="rounded-lg bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-40"
               >
                 Lưu

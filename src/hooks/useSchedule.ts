@@ -1,3 +1,5 @@
+import { serviceCoverage } from "../lib/serviceCoverage";
+import { minutesToTime } from "../lib/time";
 // ============================================================================
 // Zentrales State-Management (ohne externe Bibliothek). Kapselt Schedule,
 // LocalStorage-Persistenz und alle Aktionen (Generieren, Bearbeiten, Reset) –
@@ -222,8 +224,13 @@ export function useSchedule(storeId: string) {
   const openDays = openDates.length;
 
   const validation: ValidationResult = useMemo(
-    () => validateSchedule(schedule.employees, schedule.shifts, schedule.year, openDates, schedule.workHours),
-    [schedule.employees, schedule.shifts, schedule.year, openDates, schedule.workHours],
+    () => {
+      const result = validateSchedule(schedule.employees, schedule.shifts, schedule.year, openDates, schedule.workHours);
+      for (const gap of serviceCoverage(schedule).gaps) result.errors.push({date:gap.date,rule:"closing",severity:"error",
+        message:`${gap.date} ${minutesToTime(gap.start)}–${minutesToTime(gap.end)}: thiếu nhân viên ngoài chủ.`});
+      return {...result,valid:!result.errors.some(e=>e.severity!=="warning")};
+    },
+    [schedule, openDates],
   );
 
   /**

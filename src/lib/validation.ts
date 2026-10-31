@@ -255,7 +255,7 @@ export function validateSchedule(
     // Randwochen werden so gerundet, dass eine über zwei Monate laufende Woche
     // den Wochenvertrag nie überschreitet (contract.ts). Ein Monat weicht dadurch
     // um weniger als eine Rastereinheit (30 min) vom rechnerischen Wert ab.
-    if (Math.abs(targetDifference) >= SCHEDULE_SLOT_MINUTES) {
+    if (targetDifference > 0 || Math.abs(targetDifference) >= SCHEDULE_SLOT_MINUTES) {
       // Zu WENIG verteilt heißt: der Monat gibt nicht mehr her (oder eine feste
       // Schicht trifft das Soll nicht ganz genau) – Warnung. Zu VIEL wäre ein
       // echter Fehler im Plan.

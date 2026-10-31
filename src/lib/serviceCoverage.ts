@@ -12,7 +12,7 @@ export function serviceCoverage(schedule: Schedule) {
   const overrides = Object.fromEntries(schedule.dateOverrides.map(o => [o.date, o]));
   const days = datesOfMonth(schedule.year, schedule.month).map(date => ({ date,
     ...resolveDay(schedule.workHours, date, holidays, overrides) })).filter(day => !day.closed);
-  const employees = schedule.employees.filter(e => e.station !== "KITCHEN");
+  const employees = schedule.employees.filter(e => !e.ownerSupport);
   let openMinutes = 0, emptyMinutes = 0, requiredEmptyMinutes = 0, overlapMinutes = 0;
   const gaps: { date: string; start: number; end: number; required: boolean; unavailable: boolean }[] = [];
   for (const day of days) for (const block of day.blocks) {
@@ -23,7 +23,7 @@ export function serviceCoverage(schedule: Schedule) {
           t != null && t > block.startMinutes && t < block.endMinutes)])].sort((a, b) => a - b);
     for (let i = 0; i < points.length - 1; i++) {
       const start = points[i], end = points[i + 1], duration = end - start;
-      const count = staffAt(onDay, new Map(schedule.employees.map(e => [e.id, e])), start).filter(e => e.station !== "KITCHEN").length;
+      const count = staffAt(onDay, new Map(schedule.employees.map(e => [e.id, e])), start).filter(e => !e.ownerSupport).length;
       openMinutes += duration;
       overlapMinutes += Math.max(0, count - 1) * duration;
       if (count) continue;

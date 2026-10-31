@@ -1,3 +1,4 @@
+import { hourStatsFor } from "../lib/surchargeHours";
 import type { Employee, Schedule, Shift } from "../types";
 import {
   datesOfMonth,
@@ -9,7 +10,6 @@ import { minutesToDecimalHours, minutesToTime } from "../lib/time";
 import { MONTH_NAMES_DE } from "../lib/dateFormat";
 import { publicHolidayNames } from "../lib/holidays";
 import { format } from "date-fns";
-import { hourStatsFor } from "../lib/surchargeHours";
 import { employmentLabelDe } from "../lib/employment";
 
 // Deutscher Monats-Titel für das offizielle Dokument.
@@ -203,15 +203,14 @@ export function StundenzettelPage({
             <Td className="text-left" colSpan={4}>
               Gesamtstunden
             </Td>
-            <Td className="text-center">{" "}</Td>
+            <Td className="text-center" />
             <Td />
           </tr>
         </tfoot>
       </table>
 
-      <div className="mt-3 text-[12px]">
-        <div className="text-slate-500">Gesamtstunden</div>
-        <BlankLine />
+      <div className="mt-3 grid grid-cols-3 gap-4 text-[12px]">
+        {["Gesamtstunden", "Nachtstunden (ab 20 Uhr)", "Sonntagsstunden"].map(label => <div key={label}><div className="text-slate-500">{label}</div><div className="h-6 w-28 border-b border-slate-400" /></div>)}
       </div>
 
       <div className="mt-10 grid grid-cols-3 gap-8 text-[11px]">
@@ -237,10 +236,6 @@ function Info({ label, value, blank }: { label: string; value?: string; blank?: 
   );
 }
 
-/** Leere Schreiblinie – markiert ein Feld, das von Hand ergänzt wird. */
-function BlankLine() {
-  return <div className="border-b border-slate-400 h-[1.2em] w-full max-w-[80px]" />;
-}
 
 function Th({ children, className = "" }: { children?: React.ReactNode; className?: string }) {
   return (
@@ -288,11 +283,8 @@ export function StundenUebersichtPage({
   periodLabel?: string;
 }) {
   const days = dates ?? datesOfMonth(schedule.year, schedule.month);
-  const rows = employees.map((employee) => ({ employee, stats: hourStatsFor(schedule.shifts, employee.id, days) }));
-  const sum = rows.reduce(
-    (acc, { stats }) => ({ total: acc.total + stats.total, night: acc.night + stats.night, sunday: acc.sunday + stats.sunday }),
-    { total: 0, night: 0, sunday: 0 },
-  );
+  const rows = employees.map(employee => ({employee, stats: hourStatsFor(schedule.shifts, employee.id, days)}));
+  const sum = rows.reduce((a,{stats}) => ({total:a.total+stats.total,night:a.night+stats.night,sunday:a.sunday+stats.sunday}), {total:0,night:0,sunday:0});
   const num = "px-2 py-1.5 text-right tabular-nums";
   return (
     <div className="stundenzettel-page bg-white text-slate-900 mx-auto max-w-[210mm] p-6 text-[12px]">
@@ -314,7 +306,7 @@ export function StundenUebersichtPage({
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ employee, stats }) => (
+          {rows.map(({employee,stats}) => (
             <tr key={employee.id} className="border-b border-slate-200">
               <td className="px-2 py-1.5">{employee.name}</td>
               <td className={num}>{minutesToDecimalHours(stats.total)}</td>
@@ -332,10 +324,6 @@ export function StundenUebersichtPage({
           </tr>
         </tfoot>
       </table>
-      <p className="mt-3 text-[10px] text-slate-500">
-        Nachtstunden: bezahlte Arbeitszeit ab 20:00 Uhr (ohne Pause), ohne Sonntage. Sonntagsstunden: gesamte
-        bezahlte Arbeitszeit an Sonntagen (nicht doppelt als Nacht gezählt). Angaben in Stunden.
-      </p>
     </div>
   );
 }

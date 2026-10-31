@@ -35,7 +35,7 @@ export type Rule = { id: RuleId; kind: RuleKind; title: string; detail: string }
 
 export const RULES: readonly Rule[] = [
   { id: "open-hours", kind: "hard", title: "Chỉ trong giờ mở cửa", detail: "Ngày quán đóng cửa và giờ nghỉ trưa không xếp ca." },
-  { id: "closing", kind: "hard", title: "Đủ người theo khung vận hành", detail: "Chủ luôn có mặt; ít nhất 1 người toàn bộ giờ mở cửa, không chia bộ phận." },
+  { id: "closing", kind: "hard", title: "Đủ người theo khung vận hành", detail: "Ít nhất 1 nhân viên ngoài chủ suốt giờ mở cửa, trừ giờ nghỉ. Chủ không được tính để đạt luật này." },
   { id: "shift-length", kind: "hard", title: "Ca sáng/tối, nghỉ đúng luật", detail: "Cho phép ca sáng và tối trong một ngày; 14–16h đóng cửa không tính công. Tối đa 8 giờ công/ngày, nghỉ đúng luật." },
   { id: "max-days", kind: "hard", title: "Tối đa 6 ngày liên tiếp", detail: "Không vượt 6 ngày liên tiếp và không vượt „Số ngày làm / tuần\" đã đặt." },
   { id: "days-off", kind: "hard", title: "Ngày nghỉ cố định", detail: "Không xếp ca vào ngày nghỉ cố định của người đó." },

@@ -4,6 +4,7 @@
 // wie bisher geplant – alle Funktionen liefern dann null bzw. 0.
 // ============================================================================
 
+import { paidOverlap } from "./paidTime";
 import type { Employee, PreferredWindow, Shift } from "../types";
 import { WEEKDAY_SHORT_VI, type WeekdayKey } from "./demand";
 import { minutesToTime } from "./time";
@@ -27,12 +28,14 @@ export function preferredWindowsOf(employee: Employee): PreferredWindow[] {
 export function minutesOutsidePreferred(windows: readonly PreferredWindow[], weekday: WeekdayKey, shift: Shift): number {
   if (windows.length === 0) return 0;
   const today = windows.filter((w) => w.days.includes(weekday));
-  let outside = 0;
-  for (let t = shift.startMinutes; t < shift.endMinutes; t += 15) {
-    const end = Math.min(t + 15, shift.endMinutes);
-    if (!today.some((w) => w.startMinutes <= t && end <= w.endMinutes)) outside += end - t;
+  const intervals=today.map(w=>({start:Math.max(shift.startMinutes,w.startMinutes),end:Math.min(shift.endMinutes,w.endMinutes)})).filter(w=>w.end>w.start).sort((a,b)=>a.start-b.start);
+  const merged:{start:number;end:number}[]=[];
+  for(const interval of intervals) {
+    const last=merged[merged.length-1];
+    if(last&&interval.start<=last.end) last.end=Math.max(last.end,interval.end);
+    else merged.push({...interval});
   }
-  return outside;
+  return Math.max(0,shift.paidMinutes-merged.reduce((sum,w)=>sum+paidOverlap(shift,w.start,w.end),0));
 }
 
 /**

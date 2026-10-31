@@ -8,6 +8,7 @@
 // ============================================================================
 
 import type { Shift } from "../types";
+import { paidOverlap } from "./paidTime";
 import { parseIsoDate, weekdayKeyOf } from "./demand";
 
 /** Beginn der Nachtzeit (20:00). */
@@ -15,11 +16,7 @@ export const NIGHT_START = 20 * 60;
 
 /** Bezahlte Minuten dieser Schicht ab 20:00. */
 export function nightMinutes(shift: Shift): number {
-  const worked = Math.max(0, shift.endMinutes - Math.max(shift.startMinutes, NIGHT_START));
-  if (shift.pauseMinutes <= 0 || shift.pauseStartMinutes == null) return worked;
-  const pauseEnd = shift.pauseStartMinutes + shift.pauseMinutes;
-  const pauseAtNight = Math.max(0, pauseEnd - Math.max(shift.pauseStartMinutes, NIGHT_START));
-  return Math.max(0, worked - pauseAtNight);
+  return paidOverlap(shift, NIGHT_START, 1440);
 }
 
 /** Bezahlte Minuten dieser Schicht an einem Sonntag. */

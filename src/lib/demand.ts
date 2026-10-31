@@ -13,23 +13,15 @@ export type WeekdayKey =
   | "saturday"
   | "sunday";
 
-/**
- * Nachfrage-Gewichte je Wochentag (keine Mitarbeiterzahlen!).
- *
- * Angabe des Betriebs: „Thường từ T5 đến Chủ nhật khách tốt hơn" – Umsatz an
- * normalen Tagen rund 2.000 EUR, an starken Tagen 3.500–4.000 EUR, an
- * Feiertagen 4.500–5.000 EUR. Donnerstag bis Sonntag stehen deshalb auf 1,5,
- * Dienstag und Mittwoch auf 1,0. Feiertage zählen wie Sonntag. Montag ist
- * Ruhetag.
- */
+/** Kimi: Friday/Saturday busy; all other open weekdays have weight 1. */
 export const DAY_WEIGHTS: Record<WeekdayKey, number> = {
-  monday: 1.0, // Ruhetag (Gewicht nur relevant, falls doch geöffnet)
-  tuesday: 1.0,
-  wednesday: 1.0,
-  thursday: 1.5,
+  monday: 1,
+  tuesday: 1,
+  wednesday: 1,
+  thursday: 1,
   friday: 1.5,
   saturday: 1.5,
-  sunday: 1.5,
+  sunday: 1,
 };
 
 /** date-fns getDay(): 0=So ... 6=Sa  ->  WeekdayKey. */

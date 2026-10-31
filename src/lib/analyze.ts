@@ -23,7 +23,7 @@ import {
   type WorkHoursConfig,
 } from "./workHours";
 import { staffAt, coveragePoints, staffingWindows, weightedDailyTargets, type StaffingRule } from "./staffing";
-import { weekStartOf } from "./weeks";
+import { monthlyTargetMinutesFor } from "./contract";
 import { mayWorkOn } from "./availability";
 
 export type PeakCoverage = {
@@ -106,24 +106,10 @@ export function analyzeSchedule(input: AnalyzeInput): ScheduleAnalysis {
     else byDate.set(s.date, [s]);
   }
 
-  // Tages-Soll genauso herleiten wie der Scheduler: geschlossene Tage tragen 0.
-  const byWeek = new Map<string, string[]>();
-  for (const date of dates) {
-    if (resolveDay(input.workHours, date, holidays, overrides).closed) continue;
-    const week = weekStartOf(date);
-    byWeek.set(week, [...(byWeek.get(week) ?? []), date]);
-  }
-  const dailyTargets = new Map<string, number>();
-  const groups = input.rules?.some(rule => rule.priority === "coverage")
-    ? [[...byWeek.values()].flat()] : [...byWeek.values()];
-  for (const weekDates of groups) {
-    const hours = weekDates.reduce((sum, date) => sum + (byDate.get(date) ?? []).reduce((acc, shift) => acc + shift.paidMinutes, 0), 0) / 60;
-    const openMinutesOf = (value: string) => resolveDay(input.workHours, value, holidays, overrides).blocks
-      .reduce((sum, block) => sum + (block.endMinutes - block.startMinutes), 0);
-    for (const [date, target] of weightedDailyTargets(weekDates, hours, (value) => effectiveWeekdayKey(value, holidays), openMinutesOf, input.weights)) {
-      dailyTargets.set(date, target);
-    }
-  }
+  const openDates=dates.filter(date=>!resolveDay(input.workHours,date,holidays,overrides).closed);
+  const quota=input.employees.filter(e=>!e.ownerSupport).reduce((sum,e)=>sum+monthlyTargetMinutesFor(e,openDates,input.workHours),0);
+  const openMinutesOf=(date:string)=>resolveDay(input.workHours,date,holidays,overrides).blocks.reduce((sum,b)=>sum+b.endMinutes-b.startMinutes,0);
+  const dailyTargets=weightedDailyTargets(openDates,quota/60,date=>effectiveWeekdayKey(date,holidays),openMinutesOf,input.weights);
   const employeesById = new Map(input.employees.map((employee) => [employee.id, employee]));
 
   const days: DayReport[] = [];

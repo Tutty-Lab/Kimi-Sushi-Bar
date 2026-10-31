@@ -1,3 +1,4 @@
+import { hourStatsFor } from "./surchargeHours";
 // ============================================================================
 // PDF-Export – ECHTES Vektor-PDF (Text + Linien), nicht mehr als Screenshot.
 //
@@ -26,7 +27,6 @@ import {
   WEEKDAY_SHORT_DE,
   weekdayKeyOf,
 } from "./demand";
-import { hourStatsFor } from "./surchargeHours";
 import { minutesToDecimalHours, minutesToTime } from "./time";
 import { MONTH_NAMES_DE } from "./dateFormat";
 import { employmentLabelDe } from "./employment";
@@ -417,7 +417,6 @@ function drawStundenzettelTable(
   doc.setFillColor(...HEAD_FILL);
   doc.rect(SZ_LEFT, y, SZ_RIGHT - SZ_LEFT, footH, "F");
   drawCellText("Gesamtstunden", 0, grundlinie(y + footH / 2), "bold", INK);
-  // Kimi Sushi Bar: Gesamtstunden bleibt leer – der Chef trägt sie von Hand ein.
   y += footH;
   const tableBottom = y;
 
@@ -465,7 +464,9 @@ function drawStundenzettel(
   const col3 = (pageW - 2 * MARGIN) / 3;
 
   const summary: Array<[string, string | null]> = [
-    ["Gesamtstunden", null], // vom Chef von Hand einzutragen
+    ["Gesamtstunden", null],
+    ["Nachtstunden (ab 20 Uhr)", null],
+    ["Sonntagsstunden", null],
   ];
   summary.forEach(([label, value], i) => {
     const x = MARGIN + i * col3;
@@ -582,34 +583,31 @@ function drawUebersicht(
   y += rowH;
   line(y, LINE, 0.3);
 
-  const sum = { total: 0, night: 0, sunday: 0 };
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
+  const sum = {total:0,night:0,sunday:0};
   for (const employee of employees) {
-    const stats = hourStatsFor(schedule.shifts, employee.id, dates);
-    sum.total += stats.total;
-    sum.night += stats.night;
-    sum.sunday += stats.sunday;
+    const stats = hourStatsFor(schedule.shifts,employee.id,dates);
+    sum.total+=stats.total; sum.night+=stats.night; sum.sunday+=stats.sunday;
     cell(employee.name, cols[0], y + 4.3);
-    cell(minutesToDecimalHours(stats.total), cols[1], y + 4.3);
-    cell(minutesToDecimalHours(stats.night), cols[2], y + 4.3);
-    cell(minutesToDecimalHours(stats.sunday), cols[3], y + 4.3);
+    cell(minutesToDecimalHours(stats.total),cols[1],y+4.3);
+    cell(minutesToDecimalHours(stats.night),cols[2],y+4.3);
+    cell(minutesToDecimalHours(stats.sunday),cols[3],y+4.3);
     y += rowH;
     line(y);
   }
   line(y, LINE, 0.3);
   doc.setFont("helvetica", "bold");
   cell("Summe", cols[0], y + 4.3);
-  cell(minutesToDecimalHours(sum.total), cols[1], y + 4.3);
-  cell(minutesToDecimalHours(sum.night), cols[2], y + 4.3);
-  cell(minutesToDecimalHours(sum.sunday), cols[3], y + 4.3);
+  cell(minutesToDecimalHours(sum.total),cols[1],y+4.3);
+  cell(minutesToDecimalHours(sum.night),cols[2],y+4.3);
+  cell(minutesToDecimalHours(sum.sunday),cols[3],y+4.3);
   y += rowH + 4;
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(...MUTED);
-  const note = "Nachtstunden: bezahlte Arbeitszeit ab 20:00 Uhr (ohne Pause), ohne Sonntage. Sonntagsstunden: gesamte bezahlte Arbeitszeit an Sonntagen (nicht doppelt als Nacht gezählt). Angaben in Stunden.";
-  doc.text(doc.splitTextToSize(T(note), right - left), left, y);
+
 }
 
 // ── Datei ausliefern ─────────────────────────────────────────────────────────
