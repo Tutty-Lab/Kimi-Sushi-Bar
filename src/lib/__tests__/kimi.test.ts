@@ -10,7 +10,7 @@ import { auditSchedule } from "../scheduleAudit";
 import { datesOfMonth } from "../demand";
 it("Kimi defaults, split opening hours and owner coverage",()=>{
  const s=initialScheduleFor(STORES[0]);
- expect(STORES[0].dayWeights).toEqual({monday:0,tuesday:1,wednesday:1,thursday:1,friday:1.5,saturday:1.5,sunday:1});
+ expect(STORES[0].dayWeights).toEqual({monday:0,tuesday:1,wednesday:1,thursday:1.5,friday:1.5,saturday:1.5,sunday:1});
  expect(s.month).toBe(10);
  expect(s.employees.filter(e=>!e.ownerSupport).map(e=>e.targetMinutes)).toEqual([10800,2604,2604,2604,2604]);
  const h=publicHolidays(2026);

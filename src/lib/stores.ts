@@ -15,8 +15,8 @@ const rules: readonly StaffingRule[] = [
 ];
 export const STORES: StoreConfig[] = [{id:"kimi-sushi",name:"Kimi Sushi Bar",shortName:"Kimi Sushi",address:"Zschochernstr. 16, 07545 Gera",sampleEmployees:kimiEmployees,workHours:KIMI_HOURS,staffingRules:rules,
  demandProfile:[{startMinutes:600,endMinutes:840,level:0.5,label:"Buổi trưa ít khách"},{startMinutes:960,endMinutes:1080,level:1,label:"Đầu tối"},{startMinutes:1080,endMinutes:1200,level:2,label:"Cao điểm"},{startMinutes:1200,endMinutes:1320,level:0.8,label:"Cuối tối"}],
- dayWeights:{monday:0,tuesday:1,wednesday:1,thursday:1,friday:1.5,saturday:1.5,sunday:1},
- notes:"Thứ 2 nghỉ. Thứ 3–CN 10:00–14:00, 16:00–21:30; thứ 6–7 đến 22:00. Chủ luôn làm cùng, bắt buộc ít nhất 1 nhân viên ngoài chủ suốt giờ mở cửa. Không chia bồi/bếp. Giờ hợp đồng nhập theo tháng; minijob ưu tiên 18:00–20:00, ngày đông thứ 6–7. Ngày lễ theo giờ của thứ tương ứng; Giáng sinh chỉnh từng năm trong ngày ngoại lệ."}];
+ dayWeights:{monday:0,tuesday:1,wednesday:1,thursday:1.5,friday:1.5,saturday:1.5,sunday:1},
+ notes:"Thứ 2 nghỉ. Thứ 3–CN 10:00–14:00, 16:00–21:30; thứ 6–7 đến 22:00. Chủ luôn làm cùng, bắt buộc ít nhất 1 nhân viên ngoài chủ suốt giờ mở cửa. Không chia bồi/bếp. Giờ hợp đồng nhập theo tháng; minijob ưu tiên 18:00–20:00, ngày đông thứ 5–7. Ngày lễ theo giờ của thứ tương ứng; Giáng sinh chỉnh từng năm trong ngày ngoại lệ."}];
 export const DEFAULT_STORE_ID = STORES[0].id;
 
 /** Merkt sich die zuletzt gewählte Filiale auf diesem Gerät. */

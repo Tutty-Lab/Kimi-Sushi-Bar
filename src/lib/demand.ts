@@ -13,12 +13,12 @@ export type WeekdayKey =
   | "saturday"
   | "sunday";
 
-/** Kimi: Friday/Saturday busy; all other open weekdays have weight 1. */
+/** Kimi: Thursday/Friday/Saturday busy; all other open weekdays have weight 1. */
 export const DAY_WEIGHTS: Record<WeekdayKey, number> = {
   monday: 1,
   tuesday: 1,
   wednesday: 1,
-  thursday: 1,
+  thursday: 1.5,
   friday: 1.5,
   saturday: 1.5,
   sunday: 1,
