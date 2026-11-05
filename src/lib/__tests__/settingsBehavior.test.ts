@@ -63,7 +63,8 @@ it("incomplete or conflicting popup settings cannot be silently saved",()=>{
  {windows:[{days:[] as typeof draft.daysOff,start:"18:00",end:"20:00"}]},
  {startDate:"2027-01-20",endDate:"2027-01-10"},
  {fixed:true,fixedStart:"10:00",fixedEnd:"16:00"},
- {monthlySalary:"-1"},{hourlyRate:"0"},
+ {quotaSource:"salary" as const,monthlySalary:"-1"},{quotaSource:"salary" as const,monthlySalary:"1000",hourlyRate:"0"},
+ {quotaSource:"hours" as const,hours:"abc"},
  {unavailableRanges:[{startDate:"2027-01-20",endDate:""}]}
  ]) expect(employeeDraftErrors({...draft,...patch},base.workHours).length).toBeGreaterThan(0);
 });
